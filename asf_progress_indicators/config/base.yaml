@@ -1,0 +1,3 @@
+data_sources:
+  heat_pump_deployment_quarterly_statistics: https://assets.publishing.service.gov.uk/media/6839900f9c65cc8cdbae65ae/Heat_pump_deployment_quarterly_statistics_United_Kingdom_2025_Q1.xlsx
+  mcs_epc: outputs/MCS/mcs_installations_epc_most_relevant_250527.csv
