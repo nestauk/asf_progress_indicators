@@ -139,7 +139,7 @@ hpa_sales_data = {
 # Create dataframe
 hpa_sales = pd.DataFrame(hpa_sales_data)
 hpa_sales.name = "Year"
-hpa_sales["Dataset"] = "Factory Gate Sales (Heat Pump Association)"
+hpa_sales["Dataset"] = "Factory gate sales (Heat Pump Association)"
 
 # %% [markdown]
 # ### DESNZ Heat Pump Deployment Statistics
