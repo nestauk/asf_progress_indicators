@@ -1,21 +1,6 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     custom_cell_magics: kql
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.11.2
-#   kernelspec:
-#     display_name: .venv
-#     language: python
-#     name: python3
-# ---
-
 # %%
 import re
+from datetime import datetime
 
 import pandas as pd
 
@@ -44,14 +29,7 @@ print(mcs_x_epc["INSPECTION_DATE"].min(), mcs_x_epc["INSPECTION_DATE"].max())
 domestic_installations = mcs_x_epc[mcs_x_epc["installation_type"] == "Domestic"]
 
 # %%
-# Technology type breakdown
-mcs_installations_by_technology = (
-    domestic_installations.groupby(["commission_year", "tech_type"]).size().unstack(fill_value=0)
-)
-mcs_installations_by_technology["Dataset"] = "MCS Installations (by technology)"
-
-# %%
-# New build or retrofit breakdown
+# Retrofits only, exclude new builds
 
 
 # Helper function to add label
@@ -71,38 +49,44 @@ def _installation_label_row(row: pd.Series) -> str:
 
 
 # Add label to dataframe
-domestic_installations = domestic_installations.copy()
-domestic_installations["New build or retrofit"] = domestic_installations.apply(_installation_label_row, axis=1)
-
-# %%
-# New build or retrofit breakdown table
-mcs_installations_by_new_build = (
-    domestic_installations.groupby(["commission_year", "New build or retrofit"]).size().unstack(fill_value=0)
+retrofit_domestic_installations = domestic_installations.copy()
+retrofit_domestic_installations["New build or retrofit"] = retrofit_domestic_installations.apply(
+    _installation_label_row, axis=1
 )
-mcs_installations_by_new_build["Dataset"] = "MCS Installations (by new build or retrofit)"
+
+retrofit_domestic_installations = retrofit_domestic_installations[
+    retrofit_domestic_installations["New build or retrofit"] == "Retrofit"
+]
 
 # %%
-# Combine MCS installations tables
-mcs_installations = pd.concat([mcs_installations_by_technology, mcs_installations_by_new_build]).fillna(value=0)
-mcs_installations = mcs_installations[
-    mcs_installations.index.isin([2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025])
+# Technology type breakdown
+mcs_installations_by_technology = (
+    retrofit_domestic_installations.groupby(["commission_year", "tech_type"]).size().unstack(fill_value=0)
+)
+mcs_installations_by_technology["Dataset"] = "MCS Installations (retrofits only)"
+
+# %%
+# Only include years of interest
+current_year = datetime.now().year
+years = list(range(2018, current_year + 1))
+
+mcs_installations_by_technology = mcs_installations_by_technology[
+    mcs_installations_by_technology.index.isin(years)
 ].reset_index()
 
 # Re-order columns
-mcs_installations = mcs_installations[
+mcs_installations_by_technology = mcs_installations_by_technology[
     [
         "Dataset",
         "commission_year",
         "Air Source Heat Pump",
         "Ground/Water Source Heat Pump",
         "Exhaust Air Heat Pump",
-        "New build",
-        "Retrofit",
     ]
 ]
 
 # Rename columns
-mcs_installations = mcs_installations.rename(
+mcs_installations_by_technology = mcs_installations_by_technology.rename(
     columns={
         "commission_year": "Year",
         "Air Source Heat Pump": "Air source heat pumps",
@@ -194,8 +178,15 @@ deployment_yearly_df = deployment_yearly_df.reset_index()
 
 # %%
 # Combine into a Flourish-compatible table
-flourish_table = pd.concat([mcs_installations, hpa_sales, deployment_yearly_df]).fillna(value=0)
+flourish_table = pd.concat([mcs_installations_by_technology, hpa_sales, deployment_yearly_df]).fillna(value=0)
+
+# Create total column
+columns_to_sum = [col for col in flourish_table.columns.to_list() if col not in ["Dataset", "Year"]]
+flourish_table["Total"] = flourish_table[columns_to_sum].sum(axis=1)
 
 # %%
 # Export to .csv for importing into Flourish
-flourish_table.to_csv(f"{PROJECT_DIR}/outputs/data/installations_for_flourish.csv", index=False)
+flourish_table.to_csv(
+    f"{PROJECT_DIR}/outputs/data/{datetime.now().strftime('%Y%m%d')}_installations_for_flourish.csv",
+    index=False,
+)

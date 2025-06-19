@@ -1,20 +1,6 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     custom_cell_magics: kql
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.11.2
-#   kernelspec:
-#     display_name: .venv
-#     language: python
-#     name: python3
-# ---
-
 # %%
+from datetime import datetime
+
 import pandas as pd
 
 from asf_progress_indicators import PROJECT_DIR
@@ -42,11 +28,13 @@ print(mcs_x_epc["INSPECTION_DATE"].min(), mcs_x_epc["INSPECTION_DATE"].max())
 
 # %%
 # Assumption https://mcscertified.com/research-highlights-heat-pump-business-size/
-installers_per_contractor = 4.8
+installers_per_contractor = 4.8  # to apply to 2018 - 2025, until we have updated estimate
+
 
 # %%
 # Count number of unique installation companies that installed at least one heat pump in each year
-years = [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
+current_year = datetime.now().year
+years = list(range(2018, current_year + 1))
 
 active_installers_time_series = []
 active_companies_time_series = []
@@ -77,4 +65,7 @@ active_mcs_installers_df["Installers working for active MCS-certified firms"] = 
 
 # %%
 # Export to .csv for importing into Flourish
-active_mcs_installers_df.to_csv(f"{PROJECT_DIR}/outputs/data/installers_for_flourish.csv", index=False)
+active_mcs_installers_df.to_csv(
+    f"{PROJECT_DIR}/outputs/data/{datetime.now().strftime('%Y%m%d')}_installers_for_flourish.csv",
+    index=False,
+)
