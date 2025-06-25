@@ -347,7 +347,7 @@ for period in price_cap_periods:
 
     rows.append(
         {
-            "Heating system (region)": "Heat pump (England and Wales, low financing)",
+            "Heating system (region)": "Heat pump (England and Wales, low interest loan)",
             "Price cap period": utils.convert_period_to_string(gas_tariffs[period].price_cap_period),
             "Upfront costs": discounted_total_loan_payment_low,
             "Running costs": discounted_total_heat_pump_running_costs[period],
@@ -358,7 +358,7 @@ for period in price_cap_periods:
 
     rows.append(
         {
-            "Heating system (region)": "Heat pump (England and Wales, high financing)",
+            "Heating system (region)": "Heat pump (England and Wales, high interest loan)",
             "Price cap period": utils.convert_period_to_string(gas_tariffs[period].price_cap_period),
             "Upfront costs": discounted_total_loan_payment_high,
             "Running costs": discounted_total_heat_pump_running_costs[period],
@@ -380,7 +380,7 @@ for period in price_cap_periods:
 
     rows.append(
         {
-            "Heating system (region)": "Heat pump (Northern Ireland, low financing)",
+            "Heating system (region)": "Heat pump (Northern Ireland, low interest loan)",
             "Price cap period": utils.convert_period_to_string(gas_tariffs[period].price_cap_period),
             "Upfront costs": ni_discounted_total_loan_payment_low,
             "Running costs": discounted_total_heat_pump_running_costs[period],
@@ -391,7 +391,7 @@ for period in price_cap_periods:
 
     rows.append(
         {
-            "Heating system (region)": "Heat pump (Northern Ireland, high financing)",
+            "Heating system (region)": "Heat pump (Northern Ireland, high interest loan)",
             "Price cap period": utils.convert_period_to_string(gas_tariffs[period].price_cap_period),
             "Upfront costs": ni_discounted_total_loan_payment_high,
             "Running costs": discounted_total_heat_pump_running_costs[period],
