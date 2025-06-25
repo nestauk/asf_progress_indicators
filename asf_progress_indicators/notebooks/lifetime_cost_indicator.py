@@ -1,3 +1,16 @@
+# -*- coding: utf-8 -*-
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     custom_cell_magics: kql
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.11.2
+# ---
+
 # %%
 from datetime import datetime
 
@@ -150,8 +163,8 @@ annual_boiler_gas_consumption = gas_tdcv * heating_gas_share  # MWh per year
 annual_boiler_running_costs = {}
 discounted_total_boiler_running_costs = {}
 for period in price_cap_periods:
-    annual_boiler_running_costs[period] = gas_tariffs[period].calculate_total_consumption(
-        annual_boiler_gas_consumption, vat=True
+    annual_boiler_running_costs[period] = (
+        gas_tariffs[period].calculate_variable_consumption(annual_boiler_gas_consumption) * 1.05
     )  # £ per year, including VAT
     discounted_total_boiler_running_costs[period] = utils.discounted_sum(
         annual_boiler_running_costs[period], boiler_lifetime, discount_rate
@@ -160,7 +173,7 @@ for period in price_cap_periods:
 # %%
 # Cost of heat pump electricity consumption (annual)
 boiler_efficiency = 0.85
-annual_heat_demand = annual_boiler_gas_consumption / boiler_efficiency  # MWh per year
+annual_heat_demand = annual_boiler_gas_consumption * boiler_efficiency  # MWh per year
 
 heat_pump_efficiency = 3.0
 
@@ -169,8 +182,8 @@ annual_heat_pump_electricity_consumption = annual_heat_demand / heat_pump_effici
 annual_heat_pump_running_costs = {}
 discounted_total_heat_pump_running_costs = {}
 for period in price_cap_periods:
-    annual_heat_pump_running_costs[period] = electricity_tariffs[period].calculate_total_consumption(
-        annual_heat_pump_electricity_consumption, vat=True
+    annual_heat_pump_running_costs[period] = (
+        electricity_tariffs[period].calculate_variable_consumption(annual_heat_pump_electricity_consumption) * 1.05
     )  # £ per year, including VAT
     discounted_total_heat_pump_running_costs[period] = utils.discounted_sum(
         annual_heat_pump_running_costs[period], heat_pump_lifetime, discount_rate
@@ -316,9 +329,6 @@ for period in price_cap_periods:
 
 # %% [markdown]
 # ### Summarising
-
-# %%
-
 
 # %%
 rows = []
