@@ -48,6 +48,7 @@ select = [
 ignore = [
     "D100", # Warns about missing module-level docstrings
     "S101", # Warns about assert being removed when compiled
+    "D205", # Warns about 1 blank line being required between summary line and description in docstring
 ]
 
 [tool.ruff.lint.isort]

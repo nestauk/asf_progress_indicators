@@ -1,9 +1,12 @@
 import io
-from typing import Optional
+from typing import Optional, Tuple
 
+import asf_levies_model.getters.load_data as data
+import asf_levies_model.tariffs as tariffs
 import boto3
 import pandas as pd
 import requests
+from asf_levies_model.tariffs import Tariff
 
 from asf_progress_indicators import config
 
@@ -64,3 +67,75 @@ def get_heat_pump_deployment_statistics() -> dict[str, pd.DataFrame]:
         Dictionary of DataFrames for each sheet in the Excel file.
     """
     return _read_excel_to_frame(dataset_name="heat_pump_deployment_quarterly_statistics")
+
+
+def get_public_attitudes_tracking_survey() -> dict[str, pd.DataFrame]:
+    """Load and return DESNZ Public Attitudes Tracking Survey Winter Timeseries data.
+
+    Each key-value pair in the returned dictionary corresponds to an Excel sheet,
+    where the key is the sheet name and the value is the associated DataFrame.
+
+    Returns:
+    -------
+    dict[str, pd.DataFrame]
+        Dictionary of DataFrames for each sheet in the Excel file.
+    """
+    return _read_excel_to_frame(dataset_name="public_attitudes_tracking_survey_winter")
+
+
+def instantiate_tariffs(payment_method: str, price_cap: str) -> Tuple[Tariff, Tariff]:
+    """Create gas and electricity Tariff objects from Ofgem price cap data.
+
+    Parameters
+    ----------
+    payment_method : str
+        Payment method of interest, valid arguments are: Other Payment Method, PPM, Standard Credit.
+
+    Returns:
+    -------
+    Tuple[Tariff, Tariff]
+        Gas tariff and electricity tariff for payment method provided.
+    """
+    # Get Annex 9
+    fileobject = data.download_annex_9(as_fileobject=True)
+
+    if payment_method == "Other Payment Method":
+        gas_tariff = tariffs.GasOtherPayment.from_dataframe(
+            data.process_tariff_gas_other_payment_nil(fileobject),
+            data.process_tariff_gas_other_payment_typical(fileobject),
+            price_cap=price_cap,
+        )
+        electricity_tariff = tariffs.ElectricityOtherPayment.from_dataframe(
+            data.process_tariff_elec_other_payment_nil(fileobject),
+            data.process_tariff_elec_other_payment_typical(fileobject),
+            price_cap=price_cap,
+        )
+    elif payment_method == "PPM":
+        gas_tariff = tariffs.GasPPM.from_dataframe(
+            data.process_tariff_gas_ppm_nil(fileobject),
+            data.process_tariff_gas_ppm_typical(fileobject),
+            price_cap=price_cap,
+        )
+        electricity_tariff = tariffs.ElectricityPPM.from_dataframe(
+            data.process_tariff_elec_ppm_nil(fileobject),
+            data.process_tariff_elec_ppm_typical(fileobject),
+            price_cap=price_cap,
+        )
+    elif payment_method == "Standard Credit":
+        gas_tariff = tariffs.GasStandardCredit.from_dataframe(
+            data.process_tariff_gas_standard_credit_nil(fileobject),
+            data.process_tariff_gas_standard_credit_typical(fileobject),
+            price_cap=price_cap,
+        )
+        electricity_tariff = tariffs.ElectricityStandardCredit.from_dataframe(
+            data.process_tariff_elec_standard_credit_nil(fileobject),
+            data.process_tariff_elec_standard_credit_typical(fileobject),
+            price_cap=price_cap,
+        )
+
+    else:
+        raise KeyError("Please provide a valid payment method (Other Payment Method, PPM or Standard Credit.)")
+
+    fileobject.close()
+
+    return gas_tariff, electricity_tariff
