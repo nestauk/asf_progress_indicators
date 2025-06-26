@@ -9,6 +9,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.11.2
+#   kernelspec:
+#     display_name: asf-progress-indicators
+#     language: python
+#     name: python3
 # ---
 
 # %%
@@ -125,7 +129,7 @@ price_cap_periods = [
     "2024-10-01",
     "2025-01-01",
     "2025-04-01",
-    # "2025-07-01",
+    "2025-07-01",
 ]
 
 gas_tariffs = {}
