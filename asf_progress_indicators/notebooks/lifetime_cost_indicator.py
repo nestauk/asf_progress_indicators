@@ -155,6 +155,12 @@ for period in price_cap_periods:
     electricity_unit_costs[period] = electricity_tariff.calculate_variable_consumption(1)  # £ per MWh
 
 # %%
+# TO DO: Replace wholesale costs in tariffs for future years
+# using electricity and gas wholesale price projections from DESNZ
+# https://www.gov.uk/government/publications/energy-and-emissions-projections-2023-to-2050
+# Annex M, tab "Reference"
+
+# %%
 # Medium TDCV
 gas_tdcv = 11.5  # MWh
 electricity_tdcv = 2.7  # MWh
