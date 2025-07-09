@@ -21,6 +21,7 @@ dependencies = [
     "requests>=2.32.3",
     "asf_levies_model @ git+https://github.com/nestauk/asf_levies_model.git",
     "python-calamine>=0.3.2",
+    "statsmodels>=0.14.5",
 ]
 
 [project.urls]
