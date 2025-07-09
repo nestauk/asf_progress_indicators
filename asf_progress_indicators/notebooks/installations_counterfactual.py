@@ -8,6 +8,8 @@ import statsmodels.api as sm
 
 from asf_progress_indicators.getters import data_getters
 
+pyplot.rcParams["font.family"] = "averta"
+
 # %% [markdown]
 # ### **Measuring the number of heat pump installations**
 #
@@ -179,34 +181,58 @@ forecast_annual.loc[2025, "count"] = None
 forecast_annual.loc[2025, "fitted_post_2015_ses"] = None
 
 # %%
-f, ax = pyplot.subplots(figsize=(10, 6))
+f, ax = pyplot.subplots(figsize=(9, 5), layout="constrained")
 
-ax.bar(forecast_annual.index, forecast_annual["count"], width=0.95, color="#18a48c", label="Observed Deployment")
+ax.bar(
+    forecast_annual.index,
+    forecast_annual["count"],
+    width=0.95,
+    color="#0000ff",
+    label="MCS-certified installations in the UK",
+)
 ax.bar(
     forecast_annual.index[-6:] - 0.225,
     forecast_annual["forecast_post_2015"][-6:],
     width=0.48,
     color="#bdbdbd",
-    label="Modelled Counterfactual",
+    alpha=0.85,
+    label="Counterfactual",
 )
 ax.bar(
     forecast_annual.index[-6:] + 0.25,
     forecast_annual["asf_pathway"][-6:],
     width=0.48,
-    color="#a3dbd1",
-    label="ASF Pathway",
+    color="#74c8ba",
+    alpha=0.85,
+    label="Target",
 )
 
 ax.set_xticks(range(2016, 2031))
 ax.ticklabel_format(useOffset=False, style="plain")
 ax.get_yaxis().set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ",")))
-
-ax.set_ylabel("Annual Heat Pump Installations")
-ax.set_xlabel("Year")
+ax.tick_params(axis="both", which="both", length=0)
+# ax.set_ylabel("Annual Heat Pump Installations")
+# ax.set_xlabel("Year")
 
 ax.grid(axis="y")
 ax.set_axisbelow(True)
+ax.set_frame_on(False)
 
-ax.legend(framealpha=1)
+ax.legend(loc="upper center", frameon=False, ncol=3, bbox_to_anchor=(0.331, 1.05))
 
-# %%
+ax.set_title("Number of annual retrofit heat pump installations", loc="left", y=1.05)
+
+# create labels for bars
+observed = ["6,500", "7,300", "8,000", "11,000", "12,200", "24,900", "28,000", "34,800", "53,200"]
+for year, label in zip(range(start=2016, stop=2025), observed, strict=True):
+    # get height of bar
+    y = forecast_annual.loc[year, "count"]
+    ax.text(x=year, y=y + 15000, s=label, ha="center", fontsize=7)
+
+modelled = ["111,500", "222,900", "423,600", "741,200", "1,148,900", "1,436,200"]
+for year, label in zip(range(start=2025, stop=2031), modelled, strict=True):
+    # get height of bar
+    y = forecast_annual.loc[year, "asf_pathway"]
+    ax.text(x=year + 0.2, y=y + 17500, s=label, ha="center", fontsize=7)
+
+# f.savefig("./Headline_Progress_indicator.png", dpi=300)
