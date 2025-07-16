@@ -35,11 +35,19 @@ from asf_progress_indicators.utils import utils
 boiler_lifetime = 15  # years
 heat_pump_lifetime = 15  # years
 
-# Future discounting assumptions (£1 today is worth more to society than a £1 in the future)
-discount_rate = 3.5 / 100  # %; social time preference rate, as provided by HMT Green Book guidance
+## Not using this as we want to show nominal out-of-pocket spend for consumer
+# # Future discounting assumptions (£1 today is worth more to society than a £1 in the future)
+# discount_rate = (
+#     3.5 / 100
+# )  # %; social time preference rate, as provided by HMT Green Book guidance
+
+
+# Energy consumption - Medium TDCV
+gas_tdcv = 11.5  # MWh
+electricity_tdcv = 2.7  # MWh
 
 # %% [markdown]
-# ### Installation costs and financing
+# ### Installation costs
 
 # %%
 # Average cost of boiler install
@@ -49,6 +57,9 @@ boiler_install_cost = 3_000
 # Average cost of heat pump install
 heat_pump_install_cost = 12_000
 
+# %% [markdown]
+# Government subsidies and loans
+
 # %%
 ## Government support
 
@@ -57,58 +68,21 @@ bus_subsidy = 7_500
 
 # Scotland
 scotland_grant = 7_500
+
+# %% [markdown]
+# Financing
+
+# %%
+# Home Energy Scotland (interest-free)
 scotland_interest_free_loan = min(heat_pump_install_cost - scotland_grant, 7_500)
 scotland_loan_term = 5  # years
 
-# Northern Ireland
-# N/A
+# Standard loan England and Wales
+loan_apr = 5 / 100
+loan_term = 15  # years
+loan_amount = heat_pump_install_cost - bus_subsidy
 
-# %%
-# Loan assumptions
-loan_apr_high = 9.9 / 100  # as provided by Octopus and Aira
-loan_term_high = 5  # years; as provided by Octopus and Aira
-
-loan_apr_low = 0  # as provided by E.ON Next, British Gas
-loan_term_low = 2  # years; as provided by E.ON Next, British Gas
-
-# %%
-# England and Wales
-
-england_wales_loan_amount = heat_pump_install_cost - bus_subsidy
-
-# High interest rate, longer repayment term scenario with duture discounting
-annual_payment_high = (england_wales_loan_amount * loan_apr_high) / (1 - ((1 + loan_apr_high) ** -loan_term_high))
-total_loan_payment_high = annual_payment_high * loan_term_high
-
-discounted_total_loan_payment_high = utils.discounted_sum(annual_payment_high, loan_term_high, discount_rate)
-
-# 0% interest rate, shorter repayment term scenario with future discounting
-annual_payment_low = england_wales_loan_amount / loan_term_low
-total_loan_payment_low = england_wales_loan_amount
-
-discounted_total_loan_payment_low = utils.discounted_sum(annual_payment_low, loan_term_low, discount_rate)
-
-# %%
-# Scotland
-scotland_annual_payment = scotland_interest_free_loan / scotland_loan_term
-
-scotland_discounted_loan_payment = utils.discounted_sum(scotland_annual_payment, scotland_loan_term, discount_rate)
-
-# %%
-# Northern Ireland
-ni_loan_amount = heat_pump_install_cost
-
-# High interest rate, longer repayment term scenario with duture discounting
-ni_annual_payment_high = (ni_loan_amount * loan_apr_high) / (1 - ((1 + loan_apr_high) ** -loan_term_high))
-ni_total_loan_payment_high = ni_annual_payment_high * loan_term_high
-
-ni_discounted_total_loan_payment_high = utils.discounted_sum(ni_annual_payment_high, loan_term_high, discount_rate)
-
-# 0% interest rate, shorter repayment term scenario with future discounting
-ni_annual_payment_low = ni_loan_amount / loan_term_low
-ni_total_loan_payment_low = ni_loan_amount
-
-ni_discounted_total_loan_payment_low = utils.discounted_sum(ni_annual_payment_low, loan_term_low, discount_rate)
+annual_loan_payment = (loan_amount * loan_apr) / (1 - ((1 + loan_apr) ** -loan_term))
 
 # %% [markdown]
 # ### Operation
@@ -155,49 +129,213 @@ for period in price_cap_periods:
     electricity_unit_costs[period] = electricity_tariff.calculate_variable_consumption(1)  # £ per MWh
 
 # %%
-# TO DO: Replace wholesale costs in tariffs for future years
-# using electricity and gas wholesale price projections from DESNZ
-# https://www.gov.uk/government/publications/energy-and-emissions-projections-2023-to-2050
-# Annex M, tab "Reference"
+# Calculating year averages
+electricity_unit_cost_2023_average = (
+    electricity_unit_costs["2023-10-01"]
+    + electricity_unit_costs["2023-07-01"]
+    + electricity_unit_costs["2023-04-01"]
+    + electricity_unit_costs["2023-01-01"]
+) / 4
+electricity_unit_cost_2024_average = (
+    electricity_unit_costs["2024-10-01"]
+    + electricity_unit_costs["2024-07-01"]
+    + electricity_unit_costs["2024-04-01"]
+    + electricity_unit_costs["2024-01-01"]
+) / 4
+electricity_unit_cost_2025_average = (
+    +electricity_unit_costs["2025-07-01"] + electricity_unit_costs["2025-04-01"] + electricity_unit_costs["2025-01-01"]
+) / 3
+
+gas_unit_cost_2023_average = (
+    gas_unit_costs["2023-10-01"]
+    + gas_unit_costs["2023-07-01"]
+    + gas_unit_costs["2023-04-01"]
+    + gas_unit_costs["2023-01-01"]
+) / 4
+gas_unit_cost_2024_average = (
+    gas_unit_costs["2024-10-01"]
+    + gas_unit_costs["2024-07-01"]
+    + gas_unit_costs["2024-04-01"]
+    + gas_unit_costs["2024-01-01"]
+) / 4
+gas_unit_cost_2025_average = (
+    +gas_unit_costs["2025-07-01"] + gas_unit_costs["2025-04-01"] + gas_unit_costs["2025-01-01"]
+) / 3
+
+gas_standing_charge_2023_average = (
+    gas_standing_charges["2023-10-01"]
+    + gas_standing_charges["2023-07-01"]
+    + gas_standing_charges["2023-04-01"]
+    + gas_standing_charges["2023-01-01"]
+) / 4
+gas_standing_charge_2024_average = (
+    gas_standing_charges["2024-10-01"]
+    + gas_standing_charges["2024-07-01"]
+    + gas_standing_charges["2024-04-01"]
+    + gas_standing_charges["2024-01-01"]
+) / 4
+gas_standing_charge_2025_average = (
+    +gas_standing_charges["2025-07-01"] + gas_standing_charges["2025-04-01"] + gas_standing_charges["2025-01-01"]
+) / 3
 
 # %%
-# Medium TDCV
-gas_tdcv = 11.5  # MWh
-electricity_tdcv = 2.7  # MWh
+## Electricity and gas price projections
+# Seventh Carbon Budget baseline scenario
+# https://www.theccc.org.uk/publication/methodology-report-uk-northern-ireland-wales-and-scotland-carbon-budget-advice/
+# Accompanying data file, M9 tab, Energy retail prices in the baseline scenario (includes VAT)
+
+# £/MWh
+electricity_unit_cost_time_series = {
+    2023: electricity_unit_cost_2023_average * 1.05,
+    2024: electricity_unit_cost_2024_average * 1.05,
+    2025: electricity_unit_cost_2025_average * 1.05,
+    2026: 233,
+    2027: 214,
+    2028: 203,
+    2029: 193,
+    2030: 182,
+    2031: 179,
+    2032: 174,
+    2033: 169,
+    2034: 164,
+    2035: 161,
+    2036: 160,
+    2037: 158,
+    2038: 156,
+    2039: 156,
+    2040: 155,
+    2041: 155,
+    2042: 154,
+    2043: 154,
+    2044: 153,
+    2045: 153,
+    2046: 153,
+    2047: 153,
+    2048: 153,
+    2049: 153,
+    2050: 153,
+}
+
+# £/household/year
+gas_standing_charge_time_series = {
+    2023: gas_standing_charge_2023_average * 1.05,
+    2024: gas_standing_charge_2024_average * 1.05,
+    2025: gas_standing_charge_2025_average * 1.05,
+    2026: 110,
+    2027: 110,
+    2028: 108,
+    2029: 108,
+    2030: 108,
+    2031: 108,
+    2032: 108,
+    2033: 107,
+    2034: 107,
+    2035: 102,
+    2036: 103,
+    2037: 103,
+    2038: 103,
+    2039: 104,
+    2040: 104,
+    2041: 104,
+    2042: 105,
+    2043: 105,
+    2044: 106,
+    2045: 106,
+    2046: 106,
+    2047: 107,
+    2048: 107,
+    2049: 107,
+    2050: 107,
+}
+
+# £/MWh
+gas_unit_cost_time_series = {
+    2023: gas_unit_cost_2023_average * 1.05,
+    2024: gas_unit_cost_2024_average * 1.05,
+    2025: gas_unit_cost_2025_average * 1.05,
+    2026: 63,
+    2027: 59,
+    2028: 56,
+    2029: 54,
+    2030: 50,
+    2031: 50,
+    2032: 50,
+    2033: 50,
+    2034: 50,
+    2035: 50,
+    2036: 50,
+    2037: 50,
+    2038: 50,
+    2039: 50,
+    2040: 50,
+    2041: 50,
+    2042: 50,
+    2043: 50,
+    2044: 50,
+    2045: 50,
+    2046: 50,
+    2047: 50,
+    2048: 50,
+    2049: 50,
+    2050: 50,
+}
 
 # %%
-# Cost of boiler gas consumption (annual)
+# Lifetime running cost of a gas boiler purchased in each price cap period
+
 heating_gas_share = 0.97
 annual_boiler_gas_consumption = gas_tdcv * heating_gas_share  # MWh per year
 
-annual_boiler_running_costs = {}
-discounted_total_boiler_running_costs = {}
+annual_boiler_running_costs_dict = {}
+lifetime_boiler_running_costs = {}
 for period in price_cap_periods:
-    annual_boiler_running_costs[period] = (
-        gas_tariffs[period].calculate_variable_consumption(annual_boiler_gas_consumption) * 1.05
-    )  # £ per year, including VAT
-    discounted_total_boiler_running_costs[period] = utils.discounted_sum(
-        annual_boiler_running_costs[period], boiler_lifetime, discount_rate
-    )
+    start_year = int(period.split("-")[0])
+    lifetime_years = [start_year + i for i in range(boiler_lifetime)]
+
+    annual_boiler_running_costs = {}
+    for year in lifetime_years:
+        if year == start_year:
+            annual_boiler_running_costs[year] = (
+                gas_tariffs[period].calculate_variable_consumption(annual_boiler_gas_consumption) * 1.05
+            ) + (gas_tariffs[period].calculate_nil_consumption() * 1.05)  # £ per year, including VAT
+        else:
+            annual_boiler_running_costs[year] = (gas_unit_cost_time_series[year] * annual_boiler_gas_consumption) + (
+                gas_standing_charge_time_series[year]
+            )  # £ per year, including VAT
+
+    annual_boiler_running_costs_dict[period] = annual_boiler_running_costs
+    lifetime_boiler_running_costs[period] = sum(annual_boiler_running_costs.values())
 
 # %%
-# Cost of heat pump electricity consumption (annual)
+# Lifetime running cost of a heat pump purchased in each price cap period
+
 boiler_efficiency = 0.85
 annual_heat_demand = annual_boiler_gas_consumption * boiler_efficiency  # MWh per year
 
 heat_pump_efficiency = 3.0
-
 annual_heat_pump_electricity_consumption = annual_heat_demand / heat_pump_efficiency  # MWh per year
 
-annual_heat_pump_running_costs = {}
-discounted_total_heat_pump_running_costs = {}
+
+annual_heat_pump_running_costs_dict = {}
+lifetime_heat_pump_running_costs = {}
 for period in price_cap_periods:
-    annual_heat_pump_running_costs[period] = (
-        electricity_tariffs[period].calculate_variable_consumption(annual_heat_pump_electricity_consumption) * 1.05
-    )  # £ per year, including VAT
-    discounted_total_heat_pump_running_costs[period] = utils.discounted_sum(
-        annual_heat_pump_running_costs[period], heat_pump_lifetime, discount_rate
-    )
+    start_year = int(period.split("-")[0])
+    lifetime_years = [start_year + i for i in range(heat_pump_lifetime)]
+
+    annual_heat_pump_running_costs = {}
+    for year in lifetime_years:
+        if year == start_year:
+            annual_heat_pump_running_costs[year] = (
+                electricity_tariffs[period].calculate_variable_consumption(annual_heat_pump_electricity_consumption)
+                * 1.05
+            ) + (electricity_tariffs[period].calculate_nil_consumption() * 1.05)  # £ per year, including VAT
+        else:
+            annual_heat_pump_running_costs[year] = (
+                electricity_unit_cost_time_series[year] * annual_heat_pump_electricity_consumption
+            )  # £ per year, including VAT
+
+    annual_heat_pump_running_costs_dict[period] = annual_heat_pump_running_costs
+    lifetime_heat_pump_running_costs[period] = sum(annual_heat_pump_running_costs.values())
 
 # %% [markdown]
 # ### Maintenance
@@ -205,18 +343,12 @@ for period in price_cap_periods:
 # %%
 # Cost of boiler maintenance
 boiler_maintenance_frequency = 1  # times per year
-boiler_maintenance_cost = 130  # £ per maintenenace session
-
-discounted_total_boiler_maintenance_cost = utils.discounted_sum(boiler_maintenance_cost, boiler_lifetime, discount_rate)
+boiler_maintenance_cost = 130  # £ per maintenenance session
 
 # %%
 # Cost of heat pump maintenance
 heat_pump_maintenance_frequency = 1  # times per year
-heat_pump_maintenance_cost = 210  # £ per maintenenace session
-
-discounted_total_heat_pump_maintenance_cost = utils.discounted_sum(
-    heat_pump_maintenance_cost, heat_pump_lifetime, discount_rate
-)
+heat_pump_maintenance_cost = 210  # £ per maintenenance session
 
 # %% [markdown]
 # ### **Comparing total lifetime costs**
@@ -227,208 +359,124 @@ discounted_total_heat_pump_maintenance_cost = utils.discounted_sum(
 # - Assume no financing for upfront cost
 
 # %%
-# With discounting
-discounted_boiler_lifetime_costs = {}
-for period in price_cap_periods:
-    discounted_boiler_lifetime_costs[period] = (
-        boiler_install_cost  # assume no financing
-        + discounted_total_boiler_running_costs[period]
-        + discounted_total_boiler_maintenance_cost
-    )
-
-# Without discounting
 boiler_lifetime_costs = {}
 for period in price_cap_periods:
     boiler_lifetime_costs[period] = (
         boiler_install_cost
-        + (annual_boiler_running_costs[period] * boiler_lifetime)
+        + lifetime_boiler_running_costs[period]
         + (boiler_maintenance_cost * boiler_maintenance_frequency * boiler_lifetime)
     )
 
 # %% [markdown]
 # Heat pump
+#
+# - Assume no financing for upfront cost
 
 # %%
-# With discounting
-discounted_heat_pump_lifetime_costs = {}
-
-# England and Wales
-discounted_heat_pump_lifetime_costs["England Wales low"] = {}
-discounted_heat_pump_lifetime_costs["England Wales high"] = {}
-for period in price_cap_periods:
-    discounted_heat_pump_lifetime_costs["England Wales low"][period] = (
-        discounted_total_loan_payment_low
-        + discounted_total_heat_pump_running_costs[period]
-        + discounted_total_heat_pump_maintenance_cost
-    )
-    discounted_heat_pump_lifetime_costs["England Wales high"][period] = (
-        discounted_total_loan_payment_high
-        + discounted_total_heat_pump_running_costs[period]
-        + discounted_total_heat_pump_maintenance_cost
-    )
-
-# Scotland
-discounted_heat_pump_lifetime_costs["Scotland"] = {}
-for period in price_cap_periods:
-    discounted_heat_pump_lifetime_costs["Scotland"][period] = (
-        scotland_discounted_loan_payment
-        + discounted_total_heat_pump_running_costs[period]
-        + discounted_total_heat_pump_maintenance_cost
-    )
-
-# Northern Ireland
-discounted_heat_pump_lifetime_costs["Northern Ireland low"] = {}
-discounted_heat_pump_lifetime_costs["Northern Ireland high"] = {}
-for period in price_cap_periods:
-    discounted_heat_pump_lifetime_costs["Northern Ireland low"][period] = (
-        ni_discounted_total_loan_payment_low
-        + discounted_total_heat_pump_running_costs[period]
-        + discounted_total_heat_pump_maintenance_cost
-    )
-    discounted_heat_pump_lifetime_costs["Northern Ireland high"][period] = (
-        ni_discounted_total_loan_payment_high
-        + discounted_total_heat_pump_running_costs[period]
-        + discounted_total_heat_pump_maintenance_cost
-    )
-
-# %%
-# Without discounting
 heat_pump_lifetime_costs = {}
-
-# England and Wales
-heat_pump_lifetime_costs["England Wales low"] = {}
-heat_pump_lifetime_costs["England Wales high"] = {}
 for period in price_cap_periods:
-    heat_pump_lifetime_costs["England Wales low"][period] = (
-        total_loan_payment_low
-        + (annual_heat_pump_running_costs[period] * heat_pump_lifetime)
-        + (heat_pump_maintenance_cost * heat_pump_maintenance_frequency * heat_pump_lifetime)
-    )
-    heat_pump_lifetime_costs["England Wales high"][period] = (
-        total_loan_payment_high
-        + (annual_heat_pump_running_costs[period] * heat_pump_lifetime)
-        + (heat_pump_maintenance_cost * heat_pump_maintenance_frequency * heat_pump_lifetime)
-    )
-
-# Scotland
-heat_pump_lifetime_costs["Scotland"] = {}
-for period in price_cap_periods:
-    heat_pump_lifetime_costs["Scotland"][period] = (
-        scotland_interest_free_loan
-        + (annual_heat_pump_running_costs[period] * heat_pump_lifetime)
-        + (heat_pump_maintenance_cost * heat_pump_maintenance_frequency * heat_pump_lifetime)
-    )
-
-# Northern Ireland
-heat_pump_lifetime_costs["Northern Ireland low"] = {}
-heat_pump_lifetime_costs["Northern Ireland high"] = {}
-for period in price_cap_periods:
-    heat_pump_lifetime_costs["Northern Ireland low"][period] = (
-        ni_total_loan_payment_low
-        + (annual_heat_pump_running_costs[period] * heat_pump_lifetime)
-        + (heat_pump_maintenance_cost * heat_pump_maintenance_frequency * heat_pump_lifetime)
-    )
-    heat_pump_lifetime_costs["Northern Ireland high"][period] = (
-        ni_total_loan_payment_high
-        + (annual_heat_pump_running_costs[period] * heat_pump_lifetime)
+    heat_pump_lifetime_costs[period] = (
+        (heat_pump_install_cost - bus_subsidy)
+        + lifetime_heat_pump_running_costs[period]
         + (heat_pump_maintenance_cost * heat_pump_maintenance_frequency * heat_pump_lifetime)
     )
 
 # %% [markdown]
-# Note: Discounting tells us how much future costs/bills is worth in today's money.
-
-# %% [markdown]
-# ### Summarising
+# Heat pump
+#
+# - Assume 5% interest rate loan over 15 years
 
 # %%
+heat_pump_financed_lifetime_costs = {}
+for period in price_cap_periods:
+    heat_pump_financed_lifetime_costs[period] = (
+        (heat_pump_install_cost - bus_subsidy)
+        + lifetime_heat_pump_running_costs[period]
+        + (heat_pump_maintenance_cost * heat_pump_maintenance_frequency * heat_pump_lifetime)
+        + ((annual_loan_payment * loan_term) - (heat_pump_install_cost - bus_subsidy))
+    )
+
+# %%
+# Annualised lifetime cost breakdown table
 rows = []
 
 for period in price_cap_periods:
     rows.append(
         {
-            "Heating system (region)": "Gas boiler (UK)",
+            "Heating system": "Gas boiler",
             "Price cap period": utils.convert_period_to_string(gas_tariffs[period].price_cap_period),
-            "Upfront costs": boiler_install_cost,
-            "Running costs": discounted_total_boiler_running_costs[period],
-            "Maintenance costs": discounted_total_boiler_maintenance_cost,
-            "Total": discounted_boiler_lifetime_costs[period],
+            "Upfront costs": boiler_install_cost / boiler_lifetime,
+            "Loan interest": 0,
+            "Running costs": lifetime_boiler_running_costs[period] / boiler_lifetime,
+            "Maintenance costs": (boiler_maintenance_cost * boiler_maintenance_frequency * boiler_lifetime)
+            / boiler_lifetime,
+            "Subsidy": 0,
+            "Total": boiler_lifetime_costs[period] / boiler_lifetime,
         }
     )
 
     rows.append(
         {
-            "Heating system (region)": "Heat pump (England and Wales, low interest loan)",
+            "Heating system": "Heat pump (no financing)",
             "Price cap period": utils.convert_period_to_string(gas_tariffs[period].price_cap_period),
-            "Upfront costs": discounted_total_loan_payment_low,
-            "Running costs": discounted_total_heat_pump_running_costs[period],
-            "Maintenance costs": discounted_total_heat_pump_maintenance_cost,
-            "Total": discounted_heat_pump_lifetime_costs["England Wales low"][period],
+            "Upfront costs": (heat_pump_install_cost - bus_subsidy) / heat_pump_lifetime,
+            "Loan interest": 0,
+            "Running costs": lifetime_heat_pump_running_costs[period] / heat_pump_lifetime,
+            "Maintenance costs": (heat_pump_maintenance_cost * heat_pump_maintenance_frequency * heat_pump_lifetime)
+            / heat_pump_lifetime,
+            "Subsidy": bus_subsidy / heat_pump_lifetime,
+            "Total": heat_pump_lifetime_costs[period] / heat_pump_lifetime,
         }
     )
 
     rows.append(
         {
-            "Heating system (region)": "Heat pump (England and Wales, high interest loan)",
+            "Heating system": "Heat pump (5% loan)",
             "Price cap period": utils.convert_period_to_string(gas_tariffs[period].price_cap_period),
-            "Upfront costs": discounted_total_loan_payment_high,
-            "Running costs": discounted_total_heat_pump_running_costs[period],
-            "Maintenance costs": discounted_total_heat_pump_maintenance_cost,
-            "Total": discounted_heat_pump_lifetime_costs["England Wales high"][period],
+            "Upfront costs": (heat_pump_install_cost - bus_subsidy) / heat_pump_lifetime,
+            "Loan interest": ((annual_loan_payment * loan_term) - (heat_pump_install_cost - bus_subsidy))
+            / heat_pump_lifetime,
+            "Running costs": lifetime_heat_pump_running_costs[period] / heat_pump_lifetime,
+            "Maintenance costs": (heat_pump_maintenance_cost * heat_pump_maintenance_frequency * heat_pump_lifetime)
+            / heat_pump_lifetime,
+            "Subsidy": bus_subsidy / heat_pump_lifetime,
+            "Total": heat_pump_financed_lifetime_costs[period] / heat_pump_lifetime,
         }
     )
 
-    rows.append(
-        {
-            "Heating system (region)": "Heat pump (Scotland)",
-            "Price cap period": utils.convert_period_to_string(gas_tariffs[period].price_cap_period),
-            "Upfront costs": scotland_discounted_loan_payment,
-            "Running costs": discounted_total_heat_pump_running_costs[period],
-            "Maintenance costs": discounted_total_heat_pump_maintenance_cost,
-            "Total": discounted_heat_pump_lifetime_costs["Scotland"][period],
-        }
-    )
-
-    rows.append(
-        {
-            "Heating system (region)": "Heat pump (Northern Ireland, low interest loan)",
-            "Price cap period": utils.convert_period_to_string(gas_tariffs[period].price_cap_period),
-            "Upfront costs": ni_discounted_total_loan_payment_low,
-            "Running costs": discounted_total_heat_pump_running_costs[period],
-            "Maintenance costs": discounted_total_heat_pump_maintenance_cost,
-            "Total": discounted_heat_pump_lifetime_costs["Northern Ireland low"][period],
-        }
-    )
-
-    rows.append(
-        {
-            "Heating system (region)": "Heat pump (Northern Ireland, high interest loan)",
-            "Price cap period": utils.convert_period_to_string(gas_tariffs[period].price_cap_period),
-            "Upfront costs": ni_discounted_total_loan_payment_high,
-            "Running costs": discounted_total_heat_pump_running_costs[period],
-            "Maintenance costs": discounted_total_heat_pump_maintenance_cost,
-            "Total": discounted_heat_pump_lifetime_costs["Northern Ireland high"][period],
-        }
-    )
-
-# %%
 summary_df = pd.DataFrame(rows)
 summary_df = summary_df[
     [
-        "Heating system (region)",
+        "Heating system",
         "Price cap period",
         "Upfront costs",
+        "Loan interest",
         "Maintenance costs",
         "Running costs",
+        "Subsidy",
         "Total",
     ]
 ]
-
-columns_to_format = ["Upfront costs", "Running costs", "Maintenance costs", "Total"]
-for col in columns_to_format:
-    summary_df[col] = summary_df[col].apply(lambda x: f"{x:,.2f}")
 
 # %%
 summary_df.to_csv(
     f"{PROJECT_DIR}/outputs/data/{datetime.now().strftime('%Y%m%d')}_affordability_for_flourish.csv",
     index=False,
+)
+
+# %%
+summary_df_difference = summary_df.pivot_table(
+    columns="Heating system", index="Price cap period", values="Total", sort=False
+)
+summary_df_difference["Cost difference: Heat pump (no financing)"] = (
+    summary_df_difference["Heat pump (no financing)"] - summary_df_difference["Gas boiler"]
+)
+summary_df_difference["Cost difference: Heat pump (5% loan)"] = (
+    summary_df_difference["Heat pump (5% loan)"] - summary_df_difference["Gas boiler"]
+)
+
+# %%
+summary_df_difference.to_csv(
+    f"{PROJECT_DIR}/outputs/data/{datetime.now().strftime('%Y%m%d')}_affordability_for_flourish_2.csv",
+    index=True,
 )
