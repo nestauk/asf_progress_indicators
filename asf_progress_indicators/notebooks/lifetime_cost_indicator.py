@@ -10,7 +10,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.11.2
 #   kernelspec:
-#     display_name: asf-progress-indicators
+#     display_name: asf-progress-indicators (3.13.2)
 #     language: python
 #     name: python3
 # ---
@@ -104,6 +104,7 @@ price_cap_periods = [
     "2025-01-01",
     "2025-04-01",
     "2025-07-01",
+    "2025-10-01",
 ]
 
 gas_tariffs = {}
@@ -143,8 +144,11 @@ electricity_unit_cost_2024_average = (
     + electricity_unit_costs["2024-01-01"]
 ) / 4
 electricity_unit_cost_2025_average = (
-    +electricity_unit_costs["2025-07-01"] + electricity_unit_costs["2025-04-01"] + electricity_unit_costs["2025-01-01"]
-) / 3
+    electricity_unit_costs["2025-10-01"]
+    + electricity_unit_costs["2025-07-01"]
+    + electricity_unit_costs["2025-04-01"]
+    + electricity_unit_costs["2025-01-01"]
+) / 4
 
 gas_unit_cost_2023_average = (
     gas_unit_costs["2023-10-01"]
@@ -159,8 +163,11 @@ gas_unit_cost_2024_average = (
     + gas_unit_costs["2024-01-01"]
 ) / 4
 gas_unit_cost_2025_average = (
-    +gas_unit_costs["2025-07-01"] + gas_unit_costs["2025-04-01"] + gas_unit_costs["2025-01-01"]
-) / 3
+    gas_unit_costs["2025-10-01"]
+    + gas_unit_costs["2025-07-01"]
+    + gas_unit_costs["2025-04-01"]
+    + gas_unit_costs["2025-01-01"]
+) / 4
 
 gas_standing_charge_2023_average = (
     gas_standing_charges["2023-10-01"]
@@ -175,8 +182,12 @@ gas_standing_charge_2024_average = (
     + gas_standing_charges["2024-01-01"]
 ) / 4
 gas_standing_charge_2025_average = (
-    +gas_standing_charges["2025-07-01"] + gas_standing_charges["2025-04-01"] + gas_standing_charges["2025-01-01"]
-) / 3
+    gas_standing_charges["2025-10-01"]
+    + gas_standing_charges["2025-07-01"]
+    + gas_standing_charges["2025-04-01"]
+    + gas_standing_charges["2025-01-01"]
+    + gas_standing_charges["2025-01-01"]
+) / 4
 
 # %%
 ## Electricity and gas price projections
@@ -288,17 +299,21 @@ annual_boiler_gas_consumption = gas_tdcv * heating_gas_share  # MWh per year
 
 annual_boiler_running_costs_dict = {}
 lifetime_boiler_running_costs = {}
+
+# for a boiler purchased in each price cap period
 for period in price_cap_periods:
     start_year = int(period.split("-")[0])
+
+    # years it is operational
     lifetime_years = [start_year + i for i in range(boiler_lifetime)]
 
     annual_boiler_running_costs = {}
     for year in lifetime_years:
-        if year == start_year:
+        if year == start_year:  # in start year, use actual price cap period prices
             annual_boiler_running_costs[year] = (
                 gas_tariffs[period].calculate_variable_consumption(annual_boiler_gas_consumption) * 1.05
             ) + (gas_tariffs[period].calculate_nil_consumption() * 1.05)  # £ per year, including VAT
-        else:
+        else:  # in all other years, use annual average prices (average of four price caps in each year)
             annual_boiler_running_costs[year] = (gas_unit_cost_time_series[year] * annual_boiler_gas_consumption) + (
                 gas_standing_charge_time_series[year]
             )  # £ per year, including VAT
@@ -318,18 +333,22 @@ annual_heat_pump_electricity_consumption = annual_heat_demand / heat_pump_effici
 
 annual_heat_pump_running_costs_dict = {}
 lifetime_heat_pump_running_costs = {}
+
+# for a heat pump purchased in each price cap period
 for period in price_cap_periods:
     start_year = int(period.split("-")[0])
+
+    # years it is operational
     lifetime_years = [start_year + i for i in range(heat_pump_lifetime)]
 
     annual_heat_pump_running_costs = {}
     for year in lifetime_years:
-        if year == start_year:
+        if year == start_year:  # in start year, use actual price cap period prices
             annual_heat_pump_running_costs[year] = (
                 electricity_tariffs[period].calculate_variable_consumption(annual_heat_pump_electricity_consumption)
                 * 1.05
-            ) + (electricity_tariffs[period].calculate_nil_consumption() * 1.05)  # £ per year, including VAT
-        else:
+            )  # £ per year, including VAT
+        else:  # in all other years, use annual average prices (average of four price caps in each year)
             annual_heat_pump_running_costs[year] = (
                 electricity_unit_cost_time_series[year] * annual_heat_pump_electricity_consumption
             )  # £ per year, including VAT
@@ -343,12 +362,12 @@ for period in price_cap_periods:
 # %%
 # Cost of boiler maintenance
 boiler_maintenance_frequency = 1  # times per year
-boiler_maintenance_cost = 130  # £ per maintenenance session
+boiler_maintenance_cost = 80  # £ per maintenenance session
 
 # %%
 # Cost of heat pump maintenance
 heat_pump_maintenance_frequency = 1  # times per year
-heat_pump_maintenance_cost = 210  # £ per maintenenance session
+heat_pump_maintenance_cost = 80  # £ per maintenenance session
 
 # %% [markdown]
 # ### **Comparing total lifetime costs**
