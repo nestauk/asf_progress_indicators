@@ -29,20 +29,21 @@ print(mcs_x_epc["INSPECTION_DATE"].min(), mcs_x_epc["INSPECTION_DATE"].max())
 domestic_installations = mcs_x_epc[mcs_x_epc["installation_type"] == "Domestic"]
 
 # %%
-# Retrofits only, exclude new builds
+# Retrofits only, exclude new builds (heat pumps being installed when built)
 
 
 # Helper function to add label
-def _installation_label_row(row: pd.Series) -> str:
-    # Extract year and check for heat pump
-    inspection_year = row["INSPECTION_DATE"].year if pd.notnull(row["INSPECTION_DATE"]) else None
-    is_heat_pump = bool(re.search("heat pump", str(row["MAINHEAT_DESCRIPTION"]), flags=re.IGNORECASE))
+def _installation_label_row(row: pd.Series, threshold_int: int) -> str:
+    commission_date = pd.to_datetime(row["commission_date"], errors="raise")
+    inspection_date = pd.to_datetime(row["INSPECTION_DATE"], errors="raise")
 
-    if (
-        row["commission_year"] == inspection_year  # Installation year is the same as EPC inspection year
-        and row["TRANSACTION_TYPE"] == "new dwelling"  # EPC transaction type
-        and is_heat_pump  # EPC main heating system is heat pump
-    ):
+    days_diff_below_threshold = (
+        pd.notnull(commission_date)
+        and pd.notnull(inspection_date)
+        and abs((commission_date - inspection_date).days) < threshold_int
+    )
+
+    if days_diff_below_threshold and row["TRANSACTION_TYPE"] == "new dwelling":
         return "New build"
     else:
         return "Retrofit"
@@ -50,8 +51,10 @@ def _installation_label_row(row: pd.Series) -> str:
 
 # Add label to dataframe
 retrofit_domestic_installations = domestic_installations.copy()
-retrofit_domestic_installations["New build or retrofit"] = retrofit_domestic_installations.apply(
-    _installation_label_row, axis=1
+retrofit_domestic_installations["New build or retrofit"] = (
+    retrofit_domestic_installations.apply(
+        _installation_label_row, threshold_int=365, axis=1
+    )
 )
 
 retrofit_domestic_installations = retrofit_domestic_installations[
@@ -61,7 +64,9 @@ retrofit_domestic_installations = retrofit_domestic_installations[
 # %%
 # Technology type breakdown
 mcs_installations_by_technology = (
-    retrofit_domestic_installations.groupby(["commission_year", "tech_type"]).size().unstack(fill_value=0)
+    retrofit_domestic_installations.groupby(["commission_year", "tech_type"])
+    .size()
+    .unstack(fill_value=0)
 )
 mcs_installations_by_technology["Dataset"] = "MCS Installations (retrofits only)"
 
@@ -94,6 +99,9 @@ mcs_installations_by_technology = mcs_installations_by_technology.rename(
         "Exhaust Air Heat Pump": "Exhaust air heat pumps",
     }
 )
+
+# %%
+mcs_installations_by_technology
 
 # %% [markdown]
 # ### Heat Pump Association factory gate sales
@@ -144,7 +152,9 @@ deployment_df.columns = new_header
 deployment_df.reset_index(drop=True, inplace=True)
 
 # Add year column
-deployment_df["Year"] = deployment_df["Installation quarter [note 4]"].str.extract(r"^(\d{4})").astype(int)
+deployment_df["Year"] = (
+    deployment_df["Installation quarter [note 4]"].str.extract(r"^(\d{4})").astype(int)
+)
 
 # %%
 # Specify columns of interest
@@ -161,11 +171,15 @@ deployment_yearly_df = deployment_df[columns].groupby("Year").sum()
 # Rename columns
 deployment_yearly_df = deployment_yearly_df.rename(
     columns={
-        "Government-supported heat pump installations:\nair source heat pumps \n[note 13]": ("Air source heat pumps"),
+        "Government-supported heat pump installations:\nair source heat pumps \n[note 13]": (
+            "Air source heat pumps"
+        ),
         "Government-supported heat pump installations:\nground/water source heat pumps \n[note 13]": (
             "Ground/Water source heat pumps"
         ),
-        "Government-supported heat pump installations:\nUnknown technology [note 14]": ("Unknown technology"),
+        "Government-supported heat pump installations:\nUnknown technology [note 14]": (
+            "Unknown technology"
+        ),
     }
 )
 
@@ -178,10 +192,14 @@ deployment_yearly_df = deployment_yearly_df.reset_index()
 
 # %%
 # Combine into a Flourish-compatible table
-flourish_table = pd.concat([mcs_installations_by_technology, hpa_sales, deployment_yearly_df]).fillna(value=0)
+flourish_table = pd.concat(
+    [mcs_installations_by_technology, hpa_sales, deployment_yearly_df]
+).fillna(value=0)
 
 # Create total column
-columns_to_sum = [col for col in flourish_table.columns.to_list() if col not in ["Dataset", "Year"]]
+columns_to_sum = [
+    col for col in flourish_table.columns.to_list() if col not in ["Dataset", "Year"]
+]
 flourish_table["Total"] = flourish_table[columns_to_sum].sum(axis=1)
 
 # %%
@@ -189,4 +207,10 @@ flourish_table["Total"] = flourish_table[columns_to_sum].sum(axis=1)
 flourish_table.to_csv(
     f"{PROJECT_DIR}/outputs/data/{datetime.now().strftime('%Y%m%d')}_installations_for_flourish.csv",
     index=False,
+)
+
+# %%
+# Pickle dataframe
+flourish_table.to_pickle(
+    f"{PROJECT_DIR}/outputs/data/{datetime.now().strftime('%Y%m%d')}_historical_installations.pkl",
 )
