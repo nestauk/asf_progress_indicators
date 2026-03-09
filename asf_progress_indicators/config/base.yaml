@@ -1,6 +1,7 @@
 data_sources:
   heat_pump_deployment_quarterly_statistics: https://assets.publishing.service.gov.uk/media/6839900f9c65cc8cdbae65ae/Heat_pump_deployment_quarterly_statistics_United_Kingdom_2025_Q1.xlsx
   mcs_epc: outputs/MCS/mcs_installations_epc_most_relevant_250609.csv
+  mcs: outputs/MCS/mcs_installations_260305.csv
   public_attitudes_tracking_survey_winter: https://assets.publishing.service.gov.uk/media/67d04bad472ec44ed2307842/DESNZ_Public_Attitudes_Tracker__Winter_2024__Time_Series.xlsx
   uk_territorial_emissions: silver/uk_territorial_greenhouse_gas_emissions_statistics/LATEST/final-greenhouse-gas-emissions-tables-2023_1_2.parquet
   cb7_accompanying_data: https://www.theccc.org.uk/wp-content/uploads/2025/05/The-Seventh-Carbon-Budget-methodology-accompanying-data.xlsx

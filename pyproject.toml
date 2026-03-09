@@ -22,6 +22,7 @@ dependencies = [
     "asf_levies_model @ git+https://github.com/nestauk/asf_levies_model.git",
     "python-calamine>=0.3.2",
     "pyarrow>=21.0.0",
+    "pandera>=0.29.0",
 ]
 
 [project.urls]

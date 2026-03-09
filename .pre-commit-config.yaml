@@ -1,6 +1,6 @@
 repos:
 -   repo: https://gitlab.com/vojko.pribudic.foss/pre-commit-update
-    rev: v0.8.0
+    rev: v0.9.0
     hooks:
     -   id: pre-commit-update
 -   repo: https://github.com/pre-commit/pre-commit-hooks
@@ -18,11 +18,11 @@ repos:
         args: ["-b", dev, "-b", main]
         pass_filenames: false
 -   repo: https://github.com/kynan/nbstripout
-    rev: 0.8.1
+    rev: 0.9.1
     hooks:
     -   id: nbstripout
 -   repo: https://github.com/mwouts/jupytext
-    rev: v1.18.1
+    rev: v1.19.1
     hooks:
     -   id: jupytext
         name: jupytext-pairing
@@ -33,7 +33,7 @@ repos:
         entry: jupytext --sync
         types_or: [jupyter, python]
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.1
+    rev: v0.15.5
     hooks:
     -   id: ruff-format
     -   id: ruff-check

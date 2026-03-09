@@ -11,9 +11,7 @@ from asf_levies_model.tariffs import Tariff
 from asf_progress_indicators import config
 
 
-def _read_s3_csv_to_frame(
-    bucket_name: str, s3_key: str, chunksize: int = None
-) -> pd.DataFrame:
+def _read_s3_csv_to_frame(bucket_name: str, s3_key: str, chunksize: int = None) -> pd.DataFrame:
     s3 = boto3.client("s3")
     obj = s3.get_object(Bucket=bucket_name, Key=s3_key)
     content = io.BytesIO(obj["Body"].read())
@@ -37,6 +35,22 @@ def get_mcs_epc_data() -> pd.DataFrame:
     return _read_s3_csv_to_frame(
         bucket_name="asf-core-data",
         s3_key=config.get("data_sources").get("mcs_epc"),
+        chunksize=100000,
+    )
+
+
+def get_mcs_data() -> pd.DataFrame:
+    """Load and return combined MCS data from the ASF core data S3 bucket.
+
+    Returns:
+    -------
+    pd.DataFrame
+        Combined MCS dataset as a pandas DataFrame, using the source file
+        specified in config.
+    """
+    return _read_s3_csv_to_frame(
+        bucket_name="asf-core-data",
+        s3_key=config.get("data_sources").get("mcs"),
         chunksize=100000,
     )
 
@@ -102,9 +116,7 @@ def get_heat_pump_deployment_statistics() -> dict[str, pd.DataFrame]:
     dict[str, pd.DataFrame]
         Dictionary of DataFrames for each sheet in the Excel file.
     """
-    return _read_excel_to_frame(
-        dataset_name="heat_pump_deployment_quarterly_statistics"
-    )
+    return _read_excel_to_frame(dataset_name="heat_pump_deployment_quarterly_statistics")
 
 
 def get_cb7_accompanying_data() -> dict[str, pd.DataFrame]:
@@ -186,9 +198,7 @@ def instantiate_tariffs(payment_method: str, price_cap: str) -> Tuple[Tariff, Ta
         )
 
     else:
-        raise KeyError(
-            "Please provide a valid payment method (Other Payment Method, PPM or Standard Credit.)"
-        )
+        raise KeyError("Please provide a valid payment method (Other Payment Method, PPM or Standard Credit.)")
 
     fileobject.close()
 

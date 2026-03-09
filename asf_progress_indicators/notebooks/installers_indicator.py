@@ -1,3 +1,19 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     custom_cell_magics: kql
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.11.2
+#   kernelspec:
+#     display_name: asf-progress-indicators (3.13.2)
+#     language: python
+#     name: python3
+# ---
+
 # %%
 from datetime import datetime
 
@@ -13,15 +29,15 @@ from asf_progress_indicators.getters import data_getters
 # ### MCS Installations Database
 
 # %%
-# MCS installations with matching EPC records
-mcs_x_epc = data_getters.get_mcs_epc_data()
+# MCS installations
+mcs = data_getters.get_mcs_data()
 
 # %%
 # Check temporal coverage of datasets
-print(mcs_x_epc["commission_date"].min(), mcs_x_epc["commission_date"].max())
+print(mcs["commission_date"].min(), mcs["commission_date"].max())
 
-mcs_x_epc["INSPECTION_DATE"] = pd.to_datetime(mcs_x_epc["INSPECTION_DATE"])
-print(mcs_x_epc["INSPECTION_DATE"].min(), mcs_x_epc["INSPECTION_DATE"].max())
+# mcs_x_epc["INSPECTION_DATE"] = pd.to_datetime(mcs_x_epc["INSPECTION_DATE"])
+# print(mcs_x_epc["INSPECTION_DATE"].min(), mcs_x_epc["INSPECTION_DATE"].max())
 
 # %% [markdown]
 # ### Contractors that installed at least one heat pump in each year
@@ -40,7 +56,7 @@ active_installers_time_series = []
 active_companies_time_series = []
 
 for year in years:
-    mcs_annual = mcs_x_epc[mcs_x_epc["commission_year"] == year]
+    mcs_annual = mcs[mcs["commission_year"] == year]
     active_installers_time_series.append(
         round(
             len(mcs_annual["installation_company_mcs_number"].value_counts()) * installers_per_contractor,

@@ -27,6 +27,24 @@ from asf_progress_indicators.utils import utils
 # %% [markdown]
 # ### **Modelling the lifetime costs of a heat pump and gas boiler**
 
+# %%
+price_cap_periods = [
+    "2023-01-01",
+    "2023-04-01",
+    "2023-07-01",
+    "2023-10-01",
+    "2024-01-01",
+    "2024-04-01",
+    "2024-07-01",
+    "2024-10-01",
+    "2025-01-01",
+    "2025-04-01",
+    "2025-07-01",
+    "2025-10-01",
+    "2026-01-01",
+    "2026-04-01",
+]
+
 # %% [markdown]
 # ### General assumptions
 
@@ -55,7 +73,27 @@ boiler_install_cost = 3_000
 
 # %%
 # Average cost of heat pump install
-heat_pump_install_cost = 12_000
+heat_pump_install_cost = 13_431  # 2025 Q4 median ASHP cost from BUS statistics
+# https://www.gov.uk/government/statistics/boiler-upgrade-scheme-statistics-january-2026
+
+# %%
+# Median ASHP cost of installation, BUS statistics
+heat_pump_install_cost = {
+    "2023-01-01": 13_257,
+    "2023-04-01": 13_400,
+    "2023-07-01": 13_495,
+    "2023-10-01": 13_587,
+    "2024-01-01": 13_000,
+    "2024-04-01": 12_800,
+    "2024-07-01": 12_598,
+    "2024-10-01": 12_500,
+    "2025-01-01": 12_056,
+    "2025-04-01": 12_500,
+    "2025-07-01": 13_001,
+    "2025-10-01": 13_431,
+    "2026-01-01": 13_431,  # in absence of update
+    "2026-04-01": 13_431,  # in absence of update
+}
 
 # %% [markdown]
 # Government subsidies and loans
@@ -74,15 +112,20 @@ scotland_grant = 7_500
 
 # %%
 # Home Energy Scotland (interest-free)
-scotland_interest_free_loan = min(heat_pump_install_cost - scotland_grant, 7_500)
-scotland_loan_term = 5  # years
+# scotland_interest_free_loan = min(heat_pump_install_cost - scotland_grant, 7_500)
+# scotland_loan_term = 5  # years
 
 # Standard loan England and Wales
 loan_apr = 5 / 100
 loan_term = 15  # years
-loan_amount = heat_pump_install_cost - bus_subsidy
 
-annual_loan_payment = (loan_amount * loan_apr) / (1 - ((1 + loan_apr) ** -loan_term))
+loan_amount = {}
+annual_loan_payment = {}
+for period in price_cap_periods:
+    amount = heat_pump_install_cost[period] - bus_subsidy
+    annual_payment = (amount * loan_apr) / (1 - ((1 + loan_apr) ** -loan_term))
+    loan_amount[period] = amount
+    annual_loan_payment[period] = annual_payment
 
 # %% [markdown]
 # ### Operation
@@ -92,21 +135,7 @@ annual_loan_payment = (loan_amount * loan_apr) / (1 - ((1 + loan_apr) ** -loan_t
 
 # %%
 # Load historical price cap values for "Other Payment Method"
-price_cap_periods = [
-    "2023-01-01",
-    "2023-04-01",
-    "2023-07-01",
-    "2023-10-01",
-    "2024-01-01",
-    "2024-04-01",
-    "2024-07-01",
-    "2024-10-01",
-    "2025-01-01",
-    "2025-04-01",
-    "2025-07-01",
-    "2025-10-01",
-    "2026-01-01",
-]
+
 
 gas_tariffs = {}
 gas_standing_charges = {}
@@ -123,18 +152,12 @@ for period in price_cap_periods:
     electricity_tariffs[period] = electricity_tariff
 
     # Extract gas costs
-    gas_standing_charges[period] = (
-        gas_tariff.calculate_nil_consumption()
-    )  # £ per customer per year
+    gas_standing_charges[period] = gas_tariff.calculate_nil_consumption()  # £ per customer per year
     gas_unit_costs[period] = gas_tariff.calculate_variable_consumption(1)  # £ per MWh
 
     # Extract electricity costs
-    electricity_standing_charges[period] = (
-        electricity_tariff.calculate_nil_consumption()
-    )  # £ per customer per year
-    electricity_unit_costs[period] = electricity_tariff.calculate_variable_consumption(
-        1
-    )  # £ per MWh
+    electricity_standing_charges[period] = electricity_tariff.calculate_nil_consumption()  # £ per customer per year
+    electricity_unit_costs[period] = electricity_tariff.calculate_variable_consumption(1)  # £ per MWh
 
 # %%
 # Calculating year averages
@@ -158,12 +181,7 @@ electricity_unit_cost_2025_average = (
     + electricity_unit_costs["2025-04-01"]
     + electricity_unit_costs["2025-01-01"]
 ) / 4
-electricity_unit_cost_2026_average = (
-    electricity_unit_costs["2026-01-01"]
-    + electricity_unit_costs["2026-01-01"]
-    + electricity_unit_costs["2026-01-01"]
-    + electricity_unit_costs["2026-01-01"]
-) / 4
+electricity_unit_cost_2026_average = (electricity_unit_costs["2026-01-01"] + electricity_unit_costs["2026-04-01"]) / 2
 
 # gas unit cost
 gas_unit_cost_2023_average = (
@@ -184,12 +202,7 @@ gas_unit_cost_2025_average = (
     + gas_unit_costs["2025-04-01"]
     + gas_unit_costs["2025-01-01"]
 ) / 4
-gas_unit_cost_2026_average = (
-    gas_unit_costs["2026-01-01"]
-    + gas_unit_costs["2026-01-01"]
-    + gas_unit_costs["2026-01-01"]
-    + gas_unit_costs["2026-01-01"]
-) / 4
+gas_unit_cost_2026_average = (gas_unit_costs["2026-01-01"] + gas_unit_costs["2026-04-01"]) / 2
 
 # gas standing charge
 gas_standing_charge_2023_average = (
@@ -210,12 +223,7 @@ gas_standing_charge_2025_average = (
     + gas_standing_charges["2025-04-01"]
     + gas_standing_charges["2025-01-01"]
 ) / 4
-gas_standing_charge_2026_average = (
-    gas_standing_charges["2026-01-01"]
-    + gas_standing_charges["2026-01-01"]
-    + gas_standing_charges["2026-01-01"]
-    + gas_standing_charges["2026-01-01"]
-) / 4
+gas_standing_charge_2026_average = (gas_standing_charges["2026-01-01"] + gas_standing_charges["2026-04-01"]) / 2
 
 # %%
 ## Electricity and gas price projections
@@ -342,19 +350,12 @@ for period in price_cap_periods:
     for year in lifetime_years:
         if year == start_year:  # in start year, use actual price cap period prices
             annual_boiler_running_costs[year] = float(
-                gas_tariffs[period].calculate_variable_consumption(
-                    annual_boiler_gas_consumption
-                )
-                * 1.05
-            ) + float(
-                gas_tariffs[period].calculate_nil_consumption() * 1.05
-            )  # £ per year, including VAT
+                gas_tariffs[period].calculate_variable_consumption(annual_boiler_gas_consumption) * 1.05
+            ) + float(gas_tariffs[period].calculate_nil_consumption() * 1.05)  # £ per year, including VAT
         else:  # in all other years, use annual average prices (average of four price caps in each year)
             annual_boiler_running_costs[year] = float(
                 gas_unit_cost_time_series[year] * annual_boiler_gas_consumption
-            ) + float(
-                gas_standing_charge_time_series[year]
-            )  # £ per year, including VAT
+            ) + float(gas_standing_charge_time_series[year])  # £ per year, including VAT
 
     annual_boiler_running_costs_dict[period] = annual_boiler_running_costs
     lifetime_boiler_running_costs[period] = sum(annual_boiler_running_costs.values())
@@ -366,9 +367,7 @@ boiler_efficiency = 0.85
 annual_heat_demand = annual_boiler_gas_consumption * boiler_efficiency  # MWh per year
 
 heat_pump_efficiency = 3.0
-annual_heat_pump_electricity_consumption = (
-    annual_heat_demand / heat_pump_efficiency
-)  # MWh per year
+annual_heat_pump_electricity_consumption = annual_heat_demand / heat_pump_efficiency  # MWh per year
 
 
 annual_heat_pump_running_costs_dict = {}
@@ -385,21 +384,16 @@ for period in price_cap_periods:
     for year in lifetime_years:
         if year == start_year:  # in start year, use actual price cap period prices
             annual_heat_pump_running_costs[year] = float(
-                electricity_tariffs[period].calculate_variable_consumption(
-                    annual_heat_pump_electricity_consumption
-                )
+                electricity_tariffs[period].calculate_variable_consumption(annual_heat_pump_electricity_consumption)
                 * 1.05
             )  # £ per year, including VAT
         else:  # in all other years, use annual average prices (average of four price caps in each year)
             annual_heat_pump_running_costs[year] = float(
-                electricity_unit_cost_time_series[year]
-                * annual_heat_pump_electricity_consumption
+                electricity_unit_cost_time_series[year] * annual_heat_pump_electricity_consumption
             )  # £ per year, including VAT
 
     annual_heat_pump_running_costs_dict[period] = annual_heat_pump_running_costs
-    lifetime_heat_pump_running_costs[period] = sum(
-        annual_heat_pump_running_costs.values()
-    )
+    lifetime_heat_pump_running_costs[period] = sum(annual_heat_pump_running_costs.values())
 
 # %%
 annual_boiler_running_costs_dict["2026-01-01"]
@@ -458,13 +452,9 @@ for period in price_cap_periods:
 heat_pump_lifetime_costs = {}
 for period in price_cap_periods:
     heat_pump_lifetime_costs[period] = (
-        (heat_pump_install_cost - bus_subsidy)
+        (heat_pump_install_cost[period] - bus_subsidy)
         + lifetime_heat_pump_running_costs[period]
-        + (
-            heat_pump_maintenance_cost
-            * heat_pump_maintenance_frequency
-            * heat_pump_lifetime
-        )
+        + (heat_pump_maintenance_cost * heat_pump_maintenance_frequency * heat_pump_lifetime)
     )
 
 # %% [markdown]
@@ -476,14 +466,10 @@ for period in price_cap_periods:
 heat_pump_financed_lifetime_costs = {}
 for period in price_cap_periods:
     heat_pump_financed_lifetime_costs[period] = (
-        (heat_pump_install_cost - bus_subsidy)
+        (heat_pump_install_cost[period] - bus_subsidy)
         + lifetime_heat_pump_running_costs[period]
-        + (
-            heat_pump_maintenance_cost
-            * heat_pump_maintenance_frequency
-            * heat_pump_lifetime
-        )
-        + ((annual_loan_payment * loan_term) - (heat_pump_install_cost - bus_subsidy))
+        + (heat_pump_maintenance_cost * heat_pump_maintenance_frequency * heat_pump_lifetime)
+        + ((annual_loan_payment[period] * loan_term) - (heat_pump_install_cost[period] - bus_subsidy))
     )
 
 # %%
@@ -494,15 +480,11 @@ for period in price_cap_periods:
     rows.append(
         {
             "Heating system": "Gas boiler",
-            "Price cap period": utils.convert_period_to_string(
-                gas_tariffs[period].price_cap_period
-            ),
+            "Price cap period": utils.convert_period_to_string(gas_tariffs[period].price_cap_period),
             "Upfront costs": boiler_install_cost / boiler_lifetime,
             "Loan interest": 0,
             "Running costs": lifetime_boiler_running_costs[period] / boiler_lifetime,
-            "Maintenance costs": (
-                boiler_maintenance_cost * boiler_maintenance_frequency * boiler_lifetime
-            )
+            "Maintenance costs": (boiler_maintenance_cost * boiler_maintenance_frequency * boiler_lifetime)
             / boiler_lifetime,
             "Subsidy": 0,
             "Total": boiler_lifetime_costs[period] / boiler_lifetime,
@@ -512,19 +494,11 @@ for period in price_cap_periods:
     rows.append(
         {
             "Heating system": "Heat pump (no financing)",
-            "Price cap period": utils.convert_period_to_string(
-                gas_tariffs[period].price_cap_period
-            ),
-            "Upfront costs": (heat_pump_install_cost - bus_subsidy)
-            / heat_pump_lifetime,
+            "Price cap period": utils.convert_period_to_string(gas_tariffs[period].price_cap_period),
+            "Upfront costs": (heat_pump_install_cost[period] - bus_subsidy) / heat_pump_lifetime,
             "Loan interest": 0,
-            "Running costs": lifetime_heat_pump_running_costs[period]
-            / heat_pump_lifetime,
-            "Maintenance costs": (
-                heat_pump_maintenance_cost
-                * heat_pump_maintenance_frequency
-                * heat_pump_lifetime
-            )
+            "Running costs": lifetime_heat_pump_running_costs[period] / heat_pump_lifetime,
+            "Maintenance costs": (heat_pump_maintenance_cost * heat_pump_maintenance_frequency * heat_pump_lifetime)
             / heat_pump_lifetime,
             "Subsidy": bus_subsidy / heat_pump_lifetime,
             "Total": heat_pump_lifetime_costs[period] / heat_pump_lifetime,
@@ -534,23 +508,14 @@ for period in price_cap_periods:
     rows.append(
         {
             "Heating system": "Heat pump (5% loan)",
-            "Price cap period": utils.convert_period_to_string(
-                gas_tariffs[period].price_cap_period
-            ),
-            "Upfront costs": (heat_pump_install_cost - bus_subsidy)
-            / heat_pump_lifetime,
+            "Price cap period": utils.convert_period_to_string(gas_tariffs[period].price_cap_period),
+            "Upfront costs": (heat_pump_install_cost[period] - bus_subsidy) / heat_pump_lifetime,
             "Loan interest": (
-                (annual_loan_payment * loan_term)
-                - (heat_pump_install_cost - bus_subsidy)
+                (annual_loan_payment[period] * loan_term) - (heat_pump_install_cost[period] - bus_subsidy)
             )
             / heat_pump_lifetime,
-            "Running costs": lifetime_heat_pump_running_costs[period]
-            / heat_pump_lifetime,
-            "Maintenance costs": (
-                heat_pump_maintenance_cost
-                * heat_pump_maintenance_frequency
-                * heat_pump_lifetime
-            )
+            "Running costs": lifetime_heat_pump_running_costs[period] / heat_pump_lifetime,
+            "Maintenance costs": (heat_pump_maintenance_cost * heat_pump_maintenance_frequency * heat_pump_lifetime)
             / heat_pump_lifetime,
             "Subsidy": bus_subsidy / heat_pump_lifetime,
             "Total": heat_pump_financed_lifetime_costs[period] / heat_pump_lifetime,
@@ -582,8 +547,7 @@ summary_df_difference = summary_df.pivot_table(
     columns="Heating system", index="Price cap period", values="Total", sort=False
 )
 summary_df_difference["Cost difference: Heat pump (no financing)"] = (
-    summary_df_difference["Heat pump (no financing)"]
-    - summary_df_difference["Gas boiler"]
+    summary_df_difference["Heat pump (no financing)"] - summary_df_difference["Gas boiler"]
 )
 summary_df_difference["Cost difference: Heat pump (5% loan)"] = (
     summary_df_difference["Heat pump (5% loan)"] - summary_df_difference["Gas boiler"]
