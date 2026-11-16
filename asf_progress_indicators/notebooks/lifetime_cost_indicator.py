@@ -43,6 +43,8 @@ price_cap_periods = [
     "2025-10-01",
     "2026-01-01",
     "2026-04-01",
+    "2026-07-01",
+    "2026-10-01",
 ]
 
 # %% [markdown]
@@ -61,8 +63,8 @@ heat_pump_lifetime = 15  # years
 
 
 # Energy consumption - Medium TDCV
-gas_tdcv = 11.5  # MWh
-electricity_tdcv = 2.7  # MWh
+gas_tdcv = 9.5  # MWh
+electricity_tdcv = 2.5  # MWh
 
 # %% [markdown]
 # ### Installation costs
@@ -73,26 +75,29 @@ boiler_install_cost = 3_000
 
 # %%
 # Average cost of heat pump install
-heat_pump_install_cost = 13_431  # 2025 Q4 median ASHP cost from BUS statistics
-# https://www.gov.uk/government/statistics/boiler-upgrade-scheme-statistics-january-2026
+heat_pump_install_cost = 12_826  # 2026 Q3 median ASHP cost from BUS statistics
+# https://www.gov.uk/government/statistics/boiler-upgrade-scheme-statistics-september-2026
 
 # %%
 # Median ASHP cost of installation, BUS statistics
+# nominal prices
 heat_pump_install_cost = {
-    "2023-01-01": 13_257,
+    "2023-01-01": 13_256,
     "2023-04-01": 13_400,
     "2023-07-01": 13_495,
-    "2023-10-01": 13_587,
+    "2023-10-01": 13_600,
     "2024-01-01": 13_000,
     "2024-04-01": 12_800,
-    "2024-07-01": 12_598,
+    "2024-07-01": 12_599,
     "2024-10-01": 12_500,
-    "2025-01-01": 12_056,
+    "2025-01-01": 12_082,
     "2025-04-01": 12_500,
-    "2025-07-01": 13_001,
-    "2025-10-01": 13_431,
-    "2026-01-01": 13_431,  # in absence of update
-    "2026-04-01": 13_431,  # in absence of update
+    "2025-07-01": 13_000,
+    "2025-10-01": 13_437,
+    "2026-01-01": 13_103,
+    "2026-04-01": 12_900,
+    "2026-07-01": 12_826,
+    "2026-10-01": 12_826,  # placeholder until update
 }
 
 # %% [markdown]
@@ -160,6 +165,9 @@ for period in price_cap_periods:
     electricity_unit_costs[period] = electricity_tariff.calculate_variable_consumption(1)  # £ per MWh
 
 # %%
+electricity_unit_costs
+
+# %%
 # Calculating year averages
 
 # electricity unit cost
@@ -181,7 +189,12 @@ electricity_unit_cost_2025_average = (
     + electricity_unit_costs["2025-04-01"]
     + electricity_unit_costs["2025-01-01"]
 ) / 4
-electricity_unit_cost_2026_average = (electricity_unit_costs["2026-01-01"] + electricity_unit_costs["2026-04-01"]) / 2
+electricity_unit_cost_2026_average = (
+    electricity_unit_costs["2026-01-01"]
+    + electricity_unit_costs["2026-04-01"]
+    + electricity_unit_costs["2026-07-01"]
+    + electricity_unit_costs["2026-10-01"]
+) / 4
 
 # gas unit cost
 gas_unit_cost_2023_average = (
@@ -202,7 +215,12 @@ gas_unit_cost_2025_average = (
     + gas_unit_costs["2025-04-01"]
     + gas_unit_costs["2025-01-01"]
 ) / 4
-gas_unit_cost_2026_average = (gas_unit_costs["2026-01-01"] + gas_unit_costs["2026-04-01"]) / 2
+gas_unit_cost_2026_average = (
+    gas_unit_costs["2026-01-01"]
+    + gas_unit_costs["2026-04-01"]
+    + gas_unit_costs["2026-07-01"]
+    + gas_unit_costs["2026-10-01"]
+) / 4
 
 # gas standing charge
 gas_standing_charge_2023_average = (
@@ -223,7 +241,12 @@ gas_standing_charge_2025_average = (
     + gas_standing_charges["2025-04-01"]
     + gas_standing_charges["2025-01-01"]
 ) / 4
-gas_standing_charge_2026_average = (gas_standing_charges["2026-01-01"] + gas_standing_charges["2026-04-01"]) / 2
+gas_standing_charge_2026_average = (
+    gas_standing_charges["2026-01-01"]
+    + gas_standing_charges["2026-04-01"]
+    + gas_standing_charges["2026-07-01"]
+    + gas_standing_charges["2026-10-01"]
+) / 4
 
 # %%
 ## Electricity and gas price projections
