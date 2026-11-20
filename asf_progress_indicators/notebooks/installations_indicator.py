@@ -1,19 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     custom_cell_magics: kql
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.11.2
-#   kernelspec:
-#     display_name: asf-progress-indicators (3.13.2)
-#     language: python
-#     name: python3
-# ---
-
 # %%
 from datetime import datetime
 
@@ -29,157 +13,9 @@ from asf_progress_indicators.getters import data_getters
 # ### MCS Installations Database
 
 # %% [markdown]
-# **MCS EPC dataset - last update: 2025 Q1**
+# **MCS dataset - last update: 2026 Q2**
 
 # %%
-# MCS installations with matching EPC records
-mcs_x_epc = data_getters.get_mcs_epc_data()
-
-# %%
-# Check temporal coverage of datasets
-print(mcs_x_epc["commission_date"].min(), mcs_x_epc["commission_date"].max())
-mcs_x_epc["INSPECTION_DATE"] = pd.to_datetime(mcs_x_epc["INSPECTION_DATE"])
-print(mcs_x_epc["INSPECTION_DATE"].min(), mcs_x_epc["INSPECTION_DATE"].max())
-
-# %%
-# Domestic installations only
-mcs_epc_domestic_installations = mcs_x_epc[mcs_x_epc["installation_type"] == "Domestic"]
-
-# %%
-# Technology type breakdown
-mcs_epc_domestic_installations_by_technology = (
-    mcs_epc_domestic_installations.groupby(["commission_year", "tech_type"]).size().unstack(fill_value=0)
-)
-mcs_epc_domestic_installations_by_technology["Dataset"] = "MCS Installations (domestic only)"
-
-# Only include years of interest
-current_year = datetime.now().year
-years = list(range(2018, current_year + 1))
-
-mcs_epc_domestic_installations_by_technology = mcs_epc_domestic_installations_by_technology[
-    mcs_epc_domestic_installations_by_technology.index.isin(years)
-].reset_index()
-
-# Re-order columns
-mcs_epc_domestic_installations_by_technology = mcs_epc_domestic_installations_by_technology[
-    [
-        "Dataset",
-        "commission_year",
-        "Air Source Heat Pump",
-        "Ground/Water Source Heat Pump",
-        "Exhaust Air Heat Pump",
-    ]
-]
-
-# Rename columns
-mcs_epc_domestic_installations_by_technology = mcs_epc_domestic_installations_by_technology.rename(
-    columns={
-        "commission_year": "Year",
-        "Air Source Heat Pump": "Air source heat pumps",
-        "Ground/Water Source Heat Pump": "Ground/Water source heat pumps",
-        "Exhaust Air Heat Pump": "Exhaust air heat pumps",
-    }
-)
-
-# %%
-mcs_epc_domestic_installations_by_technology
-
-# %%
-# Retrofits only, exclude new builds (heat pumps being installed when built)
-
-
-# Helper function to add label
-def _installation_label_row(row: pd.Series, threshold_int: int) -> str:
-    commission_date = pd.to_datetime(row["commission_date"], errors="raise")
-    inspection_date = pd.to_datetime(row["INSPECTION_DATE"], errors="raise")
-
-    days_diff_below_threshold = (
-        pd.notnull(commission_date)
-        and pd.notnull(inspection_date)
-        and abs((commission_date - inspection_date).days) < threshold_int
-    )
-
-    if days_diff_below_threshold and row["TRANSACTION_TYPE"] == "new dwelling":
-        return "New build"
-    else:
-        return "Retrofit"
-
-
-# Add retrofit label to dataframe
-mcs_epc_retrofit_domestic_installations = mcs_epc_domestic_installations.copy()
-mcs_epc_retrofit_domestic_installations["New build or retrofit"] = mcs_epc_retrofit_domestic_installations.apply(
-    _installation_label_row, threshold_int=365, axis=1
-)
-
-mcs_epc_retrofit_domestic_installations = mcs_epc_retrofit_domestic_installations[
-    mcs_epc_retrofit_domestic_installations["New build or retrofit"] == "Retrofit"
-]
-
-# %%
-# Technology type breakdown
-mcs_epc_retrofit_domestic_installations = (
-    mcs_epc_retrofit_domestic_installations.groupby(["commission_year", "tech_type"]).size().unstack(fill_value=0)
-)
-mcs_epc_retrofit_domestic_installations["Dataset"] = "MCS Installations (retrofits only)"
-
-# %%
-# Only include years of interest
-current_year = datetime.now().year
-years = list(range(2018, current_year + 1))
-
-mcs_epc_retrofit_domestic_installations = mcs_epc_retrofit_domestic_installations[
-    mcs_epc_retrofit_domestic_installations.index.isin(years)
-].reset_index()
-
-# Re-order columns
-mcs_epc_retrofit_domestic_installations = mcs_epc_retrofit_domestic_installations[
-    [
-        "Dataset",
-        "commission_year",
-        "Air Source Heat Pump",
-        "Ground/Water Source Heat Pump",
-        "Exhaust Air Heat Pump",
-    ]
-]
-
-# Rename columns
-mcs_epc_retrofit_domestic_installations = mcs_epc_retrofit_domestic_installations.rename(
-    columns={
-        "commission_year": "Year",
-        "Air Source Heat Pump": "Air source heat pumps",
-        "Ground/Water Source Heat Pump": "Ground/Water source heat pumps",
-        "Exhaust Air Heat Pump": "Exhaust air heat pumps",
-    }
-)
-
-# %%
-mcs_epc_retrofit_domestic_installations
-
-# %%
-# Percentage of domestic installs that are retrofits
-
-retrofit_domestic_pct_ashp = list(
-    mcs_epc_retrofit_domestic_installations["Air source heat pumps"]
-    / mcs_epc_domestic_installations_by_technology["Air source heat pumps"]
-)
-
-
-retrofit_domestic_pct_gshp = list(
-    mcs_epc_retrofit_domestic_installations["Ground/Water source heat pumps"]
-    / mcs_epc_domestic_installations_by_technology["Ground/Water source heat pumps"]
-)
-
-
-retrofit_domestic_pct_exhaust = list(
-    mcs_epc_retrofit_domestic_installations["Exhaust air heat pumps"]
-    / mcs_epc_domestic_installations_by_technology["Exhaust air heat pumps"]
-)
-
-# %% [markdown]
-# **MCS dataset - last update: 2025 Q3**
-
-# %%
-# MCS installations
 mcs = data_getters.get_mcs_data()
 
 # %%
@@ -230,41 +66,231 @@ mcs_domestic_installations_by_technology = mcs_domestic_installations_by_technol
 # %%
 mcs_domestic_installations_by_technology
 
+# %%
+mcs_domestic_installations["project_type"].value_counts()
+
+# %%
+# New MCS data field 'project_type' which tags retrofit installs
+mcs_retrofit_domestic_installations = mcs_domestic_installations[
+    mcs_domestic_installations["project_type"] == "Retrofit"
+]
+
+# %%
+# Technology type breakdown
+mcs_retrofit_domestic_installations = (
+    mcs_retrofit_domestic_installations.groupby(["commission_year", "tech_type"]).size().unstack(fill_value=0)
+)
+mcs_retrofit_domestic_installations["Dataset"] = "MCS Installations (retrofits only)"
+
+# %%
+mcs_retrofit_domestic_installations
+
 # %% [markdown]
-# In the absence of MCS-EPC combined data for 2025 Q3 (EPC data field is needed to label retrofit/new-build), use historical % of domestic installs that are retrofits to estimate retrofit numbers
+# These values don't match up with what's being shown on the MCS Data Dashboard!
+
+# %% [markdown]
+# **MCS EPC dataset - last update: 2026 Q2**
 
 # %%
-mcs_domestic_installations_by_technology["Air source heat pumps"] * retrofit_domestic_pct_ashp
+# MCS installations with matching EPC records
+mcs_x_epc = data_getters.get_mcs_epc_data()
 
 # %%
-mcs_domestic_installations_by_technology["Ground/Water source heat pumps"] * retrofit_domestic_pct_gshp
+# Check temporal coverage of datasets
+print(mcs_x_epc["commission_date"].min(), mcs_x_epc["commission_date"].max())
+mcs_x_epc["INSPECTION_DATE"] = pd.to_datetime(mcs_x_epc["INSPECTION_DATE"])
+print(mcs_x_epc["INSPECTION_DATE"].min(), mcs_x_epc["INSPECTION_DATE"].max())
 
 # %%
-mcs_domestic_installations_by_technology["Exhaust air heat pumps"] * retrofit_domestic_pct_exhaust
+mcs_x_epc["project_type"].value_counts()
+
+# %% [markdown]
+# Filtering for domestic installs only
+
+# %%
+# Domestic installations only
+mcs_epc_domestic_installations = mcs_x_epc[mcs_x_epc["installation_type"] == "Domestic"]
+
+# %%
+# Technology type breakdown
+mcs_epc_domestic_installations_by_technology = (
+    mcs_epc_domestic_installations.groupby(["commission_year", "tech_type"]).size().unstack(fill_value=0)
+)
+mcs_epc_domestic_installations_by_technology["Dataset"] = "MCS Installations (domestic only)"
+
+# Only include years of interest
+current_year = datetime.now().year
+years = list(range(2018, current_year + 1))
+
+mcs_epc_domestic_installations_by_technology = mcs_epc_domestic_installations_by_technology[
+    mcs_epc_domestic_installations_by_technology.index.isin(years)
+].reset_index()
+
+# Re-order columns
+mcs_epc_domestic_installations_by_technology = mcs_epc_domestic_installations_by_technology[
+    [
+        "Dataset",
+        "commission_year",
+        "Air Source Heat Pump",
+        "Ground/Water Source Heat Pump",
+        "Exhaust Air Heat Pump",
+    ]
+]
+
+# Rename columns
+mcs_epc_domestic_installations_by_technology = mcs_epc_domestic_installations_by_technology.rename(
+    columns={
+        "commission_year": "Year",
+        "Air Source Heat Pump": "Air source heat pumps",
+        "Ground/Water Source Heat Pump": "Ground/Water source heat pumps",
+        "Exhaust Air Heat Pump": "Exhaust air heat pumps",
+    }
+)
+
+# %%
+mcs_epc_domestic_installations_by_technology
+
+# %% [markdown]
+# Filtering for domestic AND retrofit installs only
+
+# %%
+# New MCS data field 'project_type' which tags retrofit installs
+mcs_epc_retrofit_domestic_installations = mcs_epc_domestic_installations[
+    mcs_epc_domestic_installations["project_type"] == "Retrofit"
+]
+
+# %%
+# Technology type breakdown
+mcs_epc_retrofit_domestic_installations = (
+    mcs_epc_retrofit_domestic_installations.groupby(["commission_year", "tech_type"]).size().unstack(fill_value=0)
+)
+mcs_epc_retrofit_domestic_installations["Dataset"] = "MCS Installations (retrofits only)"
+
+# %%
+# Only include years of interest
+current_year = datetime.now().year
+years = list(range(2018, current_year + 1))
+
+mcs_epc_retrofit_domestic_installations = mcs_epc_retrofit_domestic_installations[
+    mcs_epc_retrofit_domestic_installations.index.isin(years)
+].reset_index()
+
+# Re-order columns
+mcs_epc_retrofit_domestic_installations = mcs_epc_retrofit_domestic_installations[
+    [
+        "Dataset",
+        "commission_year",
+        "Air Source Heat Pump",
+        "Ground/Water Source Heat Pump",
+        "Exhaust Air Heat Pump",
+    ]
+]
+
+# Rename columns
+mcs_epc_retrofit_domestic_installations = mcs_epc_retrofit_domestic_installations.rename(
+    columns={
+        "commission_year": "Year",
+        "Air Source Heat Pump": "Air source heat pumps",
+        "Ground/Water Source Heat Pump": "Ground/Water source heat pumps",
+        "Exhaust Air Heat Pump": "Exhaust air heat pumps",
+    }
+)
+
+# %%
+mcs_epc_retrofit_domestic_installations
+
+# %% [markdown]
+# Comparing with the old approach where we estimated our own retrofit labels
+
+# %%
+# SUPERSEDED CODE - previously used when we didn't have the project_type field yet
+# Retrofits only, exclude new builds (heat pumps being installed when built)
+
+
+# Helper function to add label
+def _installation_label_row(row: pd.Series, threshold_int: int) -> str:
+    commission_date = pd.to_datetime(row["commission_date"], errors="raise")
+    inspection_date = pd.to_datetime(row["INSPECTION_DATE"], errors="raise")
+
+    days_diff_below_threshold = (
+        pd.notnull(commission_date)
+        and pd.notnull(inspection_date)
+        and abs((commission_date - inspection_date).days) < threshold_int
+    )
+
+    if days_diff_below_threshold and row["TRANSACTION_TYPE"] == "new dwelling":
+        return "New build"
+    else:
+        return "Retrofit"
+
+
+# Add retrofit label to dataframe
+mcs_epc_retrofit_domestic_installations_estimated = mcs_epc_domestic_installations.copy()
+mcs_epc_retrofit_domestic_installations_estimated["New build or retrofit"] = (
+    mcs_epc_retrofit_domestic_installations_estimated.apply(_installation_label_row, threshold_int=365, axis=1)
+)
+
+mcs_epc_retrofit_domestic_installations_estimated = mcs_epc_retrofit_domestic_installations_estimated[
+    mcs_epc_retrofit_domestic_installations_estimated["New build or retrofit"] == "Retrofit"
+]
+
+# %%
+# Technology type breakdown
+mcs_epc_retrofit_domestic_installations_estimated = (
+    mcs_epc_retrofit_domestic_installations_estimated.groupby(["commission_year", "tech_type"])
+    .size()
+    .unstack(fill_value=0)
+)
+mcs_epc_retrofit_domestic_installations_estimated["Dataset"] = "MCS Installations (retrofits only)"
+
+# %%
+# Only include years of interest
+current_year = datetime.now().year
+years = list(range(2018, current_year + 1))
+
+mcs_epc_retrofit_domestic_installations_estimated = mcs_epc_retrofit_domestic_installations_estimated[
+    mcs_epc_retrofit_domestic_installations_estimated.index.isin(years)
+].reset_index()
+
+# Re-order columns
+mcs_epc_retrofit_domestic_installations_estimated = mcs_epc_retrofit_domestic_installations_estimated[
+    [
+        "Dataset",
+        "commission_year",
+        "Air Source Heat Pump",
+        "Ground/Water Source Heat Pump",
+        "Exhaust Air Heat Pump",
+    ]
+]
+
+# Rename columns
+mcs_epc_retrofit_domestic_installations_estimated = mcs_epc_retrofit_domestic_installations_estimated.rename(
+    columns={
+        "commission_year": "Year",
+        "Air Source Heat Pump": "Air source heat pumps",
+        "Ground/Water Source Heat Pump": "Ground/Water source heat pumps",
+        "Exhaust Air Heat Pump": "Exhaust air heat pumps",
+    }
+)
+
+# %%
+mcs_epc_retrofit_domestic_installations_estimated
 
 # %% [markdown]
 # ### Heat Pump Association factory gate sales
 
 # %%
 # Read Heat Pump Association factory gate sales
-# https://www.heatpumps.org.uk/resources/statistics/
-
+# https://hpauk.org.uk/resources/statistics/
 # To be manually updated when new data is released
-years = list(range(2019, 2025))
+years = list(range(2019, 2026))
 hpa_sales_data = {
     "Year": years,
-    "Other heat pumps": [1_242, 1_004, 2_315, 4_177, 6_945, 1_673],
-    "Domestic hot water heat pumps": [0, 0, 0, 0, 0, 12_265],
-    "Ground/Water source heat pumps": [2_020, 3_197, 4_207, 4_664, 5_91, 3_087],
-    "Air-to-water (monobloc units) heat pumps": [
-        19_606,
-        22_310,
-        37_362,
-        47_489,
-        47_399,
-        78_060,
-    ],
-    "Air-to-water (split units) heat pumps": [2_859, 2_715, 3_815, 4_731, 3_471, 3_260],
+    "Other heat pumps": [1_242, 1_004, 2_315, 4_177, 6_945, 3_166, 4_025],
+    "Domestic hot water heat pumps": [0, 0, 0, 0, 0, 10_772, 14_684],
+    "Ground/Water source heat pumps": [2_020, 3_197, 4_207, 4_664, 5_91, 3_087, 4_070],
+    "Air-to-water (monobloc units) heat pumps": [19_606, 22_310, 37_362, 47_489, 47_399, 78_060, 98_946],
+    "Air-to-water (split units) heat pumps": [2_859, 2_715, 3_815, 4_731, 3_471, 3_260, 3_312],
 }
 
 # Create dataframe
@@ -330,6 +356,9 @@ flourish_table = pd.concat([mcs_installations_by_technology, hpa_sales, deployme
 # Create total column
 columns_to_sum = [col for col in flourish_table.columns.to_list() if col not in ["Dataset", "Year"]]
 flourish_table["Total"] = flourish_table[columns_to_sum].sum(axis=1)
+
+# %%
+flourish_table
 
 # %%
 # Export to .csv for importing into Flourish

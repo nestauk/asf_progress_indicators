@@ -85,3 +85,14 @@ active_mcs_installers_df.to_csv(
     f"{PROJECT_DIR}/outputs/data/{datetime.now().strftime('%Y%m%d')}_installers_for_flourish.csv",
     index=False,
 )
+
+# %% [markdown]
+# Ad-hoc queries
+
+# %%
+# 2025 Q1
+mcs_2025_h1 = mcs[(mcs["commission_date"] >= "2025-01-01") & (mcs["commission_date"] < "2025-07-01")]
+
+companies_2025_h1 = len(mcs_2025_h1["installation_company_mcs_number"].value_counts())
+installers_2025_h1 = round(companies_2025_h1 * installers_per_contractor, 0)
+installers_2025_h1
